@@ -1,44 +1,23 @@
 "use client";
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+
+import { signIn } from "next-auth/react"
+import { redirect } from "next/navigation";
 
 export default function Login() {
-  const router = useRouter();
+  async function handleLogin(formData) {
+    const response = await signIn("credentials", {
+      email: formData.get("email"),
+      password: formData.get("password"),
+      redirect: false,
+    })
 
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-
-  // FUNCTION LOGIN
-  const handleLogin = async () => {
-    try {
-      const res = await fetch("http://localhost:3000/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        alert(data.message);
-        return;
-      }
-
-      // Simpan token + role
-      localStorage.setItem("token", data.token);
-      localStorage.setItem("role", data.user.role);
-
-      // Redirect sesuai role
-      if (data.user.role === "admin") {
-        router.push("/admin/dashboard");
-      } else {
-        router.push("/user/homepagesiswa");
-      }
-    } catch (error) {
-      console.error(error);
-      alert("Terjadi kesalahan server!");
+    if (!response.ok) {
+      alert("Login failed!")
+      return
     }
-  };
+
+    redirect("/user/homepagesiswa")
+  }
 
   return (
     <div className="lg:min-h-screen bg-white flex flex-col items-center justify-center p-6">
@@ -61,7 +40,7 @@ export default function Login() {
         </div>
 
         {/* FORM LOGIN */}
-        <form className="max-w-md lg:ml-auto w-full" onSubmit={(e) => e.preventDefault()}>
+        <form action={handleLogin} className="max-w-md lg:ml-auto w-full">
           <h2 className="text-slate-950 text-3xl font-semibold mb-8">Sign In</h2>
 
           <div className="space-y-6">
@@ -71,8 +50,7 @@ export default function Login() {
               </label>
               <input
                 type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                name="email"
                 className="bg-slate-100 w-full text-sm text-slate-900 px-4 py-3 rounded-md outline-0 border border-gray-200 focus:border-blue-950 focus:bg-transparent"
                 placeholder="Masukkan email anda"
               />
@@ -84,8 +62,7 @@ export default function Login() {
               </label>
               <input
                 type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                name="password"
                 className="bg-slate-100 w-full text-sm text-slate-900 px-4 py-3 rounded-md outline-0 border border-gray-200 focus:border-blue-600 focus:bg-transparent"
                 placeholder="Masukkan password anda"
               />
@@ -98,14 +75,9 @@ export default function Login() {
             </div>
           </div>
 
-         <button
-  type="button"
-  onClick={() => router.push("/user/homepagesiswa")}
-  className="w-full shadow-xl py-2.5 px-4 text-[15px] font-semibold rounded-md text-white bg-blue-950 hover:bg-blue-700 cursor-pointer"
->
-  Log in
-</button>
-
+          <button type="submit" className="w-full shadow-xl py-2.5 px-4 text-[15px] font-semibold rounded-md text-white bg-blue-950 hover:bg-blue-700 cursor-pointer">
+            Log in
+          </button>
         </form>
 
       </div>

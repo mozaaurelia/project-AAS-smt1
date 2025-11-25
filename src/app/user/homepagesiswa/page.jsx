@@ -11,10 +11,16 @@ import {
 import { FiLayers } from "react-icons/fi";
 import { MdOutlineLibraryBooks } from "react-icons/md";
 import { RiRefund2Line } from "react-icons/ri";
+import { getBookCoverSrc } from "@/utils/imageHelper";
+import { signOut } from "next-auth/react";
+import { useSession } from "next-auth/react"
 
 export default function Home() {
-  const [open, setOpen] = useState(false);
+  const { data: session, status } = useSession()
 
+  const user = session?.user
+
+  const [open, setOpen] = useState(false);
   const [bukuData, setBukuData] = useState([]);
   const [filteredBuku, setFilteredBuku] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState("All");
@@ -23,11 +29,11 @@ export default function Home() {
 
   const categories = [
     { id: "All", label: "All" },
-    { id: 1, label: "Fiksi" },
-    { id: 2, label: "Agama" },
-    { id: 3, label: "Ekonomi" },
-    { id: 4, label: "Humor" },
-    { id: 5, label: "Sejarah" },
+    { id: "1", label: "Fiksi" },
+    { id: "2", label: "Agama" },
+    { id: "3", label: "Ekonomi" },
+    { id: "4", label: "Humor" },
+    { id: "5", label: "Sejarah" },
   ];
 
   // Fetch buku dari API
@@ -36,8 +42,13 @@ export default function Home() {
       setLoading(true);
       const res = await fetch("/api/buku");
       const data = await res.json();
-      setBukuData(data.data || []);
-      setFilteredBuku(data.data || []);
+
+      if (data.success) {
+        setBukuData(data.data);
+        setFilteredBuku(data.data);
+      } else {
+        console.error("Gagal fetch buku:", data.error);
+      }
     } catch (error) {
       console.error("Gagal fetch buku:", error);
     } finally {
@@ -49,15 +60,18 @@ export default function Home() {
     fetchBuku();
   }, []);
 
+  // Search + filter
   useEffect(() => {
     let filtered = bukuData;
 
+    // Filter by kategori
     if (selectedCategory !== "All") {
       filtered = filtered.filter(
-        (book) => book.id_kategori === selectedCategory
+        (book) => book.id_kategori?.toString() === selectedCategory.toString()
       );
     }
 
+    // Search
     if (searchQuery) {
       filtered = filtered.filter(
         (book) =>
@@ -101,14 +115,6 @@ export default function Home() {
         </div>
       </header>
 
-      {/* OVERLAY */}
-      {open && (
-        <div
-          className="fixed inset-0 bg-black/30 z-30"
-          onClick={() => setOpen(false)}
-        />
-      )}
-
       {/* SIDEBAR */}
       <aside
         className={`fixed top-0 left-0 h-full w-72 bg-[#1E2B60] text-white p-6 rounded-tr-lg rounded-br-lg z-40 shadow-lg transform transition-transform duration-300 ${
@@ -118,8 +124,8 @@ export default function Home() {
         <div className="flex items-center gap-3 mb-10 cursor-pointer">
           <img src="/pretty.jpg" className="w-10 h-10 rounded-2xl" />
           <div className="flex flex-col">
-            <p className="font-semibold">Theressa XI RPL 5</p>
-            <p className="text-sm text-gray-300">Siswa</p>
+            <p className="font-semibold">{`${user?.name}  ${user?.kelas}`}</p>
+            <p className="text-sm text-gray-300">{user?.role == "user" ? "Siswa" : user?.role}</p>
           </div>
         </div>
 
@@ -151,12 +157,16 @@ export default function Home() {
           />
 
           <div className="border-t border-white/20 pt-5">
-            <MenuItem
+            {/* <MenuItem
               icon={<AiOutlineLogout size={22} />}
               label="Logout"
               danger
               link="/logout"
-            />
+            /> */}
+            <button
+              className="flex items-center gap-3 p-2 rounded-lg cursor-pointer transition hover:bg-white/10"
+              onClick={signOut}
+            ><AiOutlineLogout size={22} />Log out</button>
           </div>
         </nav>
       </aside>
@@ -222,7 +232,6 @@ export default function Home() {
 }
 
 /* ===== COMPONENTS ===== */
-
 function MenuItem({ icon, label, danger, link }) {
   return (
     <Link
@@ -256,10 +265,13 @@ function BookCard({ id, image, title, author }) {
       href={`/user/detail/${id}`}
       className="w-52 cursor-pointer select-none flex flex-col items-center"
     >
-      <img
-        src={`/image/${image}`} // pastikan semua gambar ada di public/image/
+        <img
+        src={getBookCoverSrc(image)}  // ✅ Langsung gunakan value dari database
         className="rounded-xl w-52 h-64 object-cover shadow-md"
         alt={title}
+        onError={(e) => {
+          e.currentTarget.src = '/placeholder.jpg'; // Gambar cadangan jika error
+        }}
       />
 
       <div className="text-center mt-4">
@@ -273,4 +285,3 @@ function BookCard({ id, image, title, author }) {
     </Link>
   );
 }
-

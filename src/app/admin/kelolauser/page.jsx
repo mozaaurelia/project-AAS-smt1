@@ -1,6 +1,6 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import {
   AiOutlineMenu,
@@ -10,137 +10,40 @@ import {
 import { FiLayers } from "react-icons/fi";
 import { MdOutlineLibraryBooks } from "react-icons/md";
 import { RiRefund2Line } from "react-icons/ri";
-import { HiOutlineBookOpen, HiOutlineUsers } from "react-icons/hi";
+import { Search, Plus, Edit2, Trash2, X, Save, UserPlus, AlertCircle } from 'lucide-react';
 
-export default function KelolaUsersAdmin() {
+export default function KelolaDataUser() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-slate-50 to-blue-100 flex flex-col">
-      {/* NAVBAR */}
-      <header
-        className={`fixed top-0 left-0 right-0 flex items-center justify-between px-8 py-4 bg-white/80 backdrop-blur-lg border-b border-blue-100 shadow-sm z-40 transition-all duration-300 ${
-          sidebarOpen ? "pl-72" : "pl-8"
-        }`}
-      >
-        <div className="flex items-center space-x-4">
-          <button 
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="hover:bg-blue-50 p-2 rounded-lg transition"
-          >
-            <AiOutlineMenu size={24} className="text-blue-950" />
-          </button>
-
-          <div className="flex items-center space-x-3">
-            <div className="w-9 h-9 bg-gradient-to-br from-blue-900 to-blue-700 rounded-xl flex items-center justify-center shadow-lg">
-              <HiOutlineBookOpen className="text-white" size={20} />
-            </div>
-            <span className="text-blue-950 font-bold text-lg select-none">
-              Perpustakaan Digital
-            </span>
-          </div>
-        </div>
-      </header>
-
-      {/* OVERLAY */}
-      {sidebarOpen && (
-        <div
-          className="fixed inset-0 bg-black/40 backdrop-blur-sm z-30"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
-
-      {/* SIDEBAR */}
-      <aside
-        className={`fixed top-0 left-0 h-full w-64 bg-white text-gray-700 py-6 shadow-xl z-40 transform transition-all duration-300 ${
-          sidebarOpen ? "translate-x-0" : "-translate-x-full"
-        }`}
-      >
-        <nav className="flex flex-col gap-1 px-3 text-sm font-medium">
-          <MenuItem 
-            icon={<AiOutlineHome size={20} />} 
-            label="Dashboard" 
-            link="/admin/dashboard"
-          />
-          <MenuItem 
-            icon={<HiOutlineUsers size={20} />} 
-            label="Kelola Users" 
-            link="/admin/users"
-            active={true}
-          />
-          <MenuItem 
-            icon={<FiLayers size={20} />} 
-            label="Kelola Buku" 
-            link="/admin/kelolabuku" 
-          />
-          <MenuItem 
-            icon={<MdOutlineLibraryBooks size={20} />} 
-            label="Peminjaman" 
-            link="/admin/peminjaman"
-          />
-
-          <div className="border-t border-gray-200 my-4"></div>
-          
-          <MenuItem 
-            icon={<AiOutlineLogout size={20} />} 
-            label="Pengaturan" 
-            link="/admin/settings" 
-          />
-        </nav>
-      </aside>
-
-      {/* MAIN CONTENT */}
-      <main
-        className={`pt-24 px-10 pb-20 transition-all duration-300 ${
-          sidebarOpen ? "ml-64" : "ml-0"
-        }`}
-      >
-        <KelolaUsers />
-      </main>
-    </div>
-  );
-}
-
-function MenuItem({ icon, label, link, active }) {
-  return (
-    <Link
-      href={link}
-      className={`flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer transition-all ${
-        active 
-          ? "bg-blue-600 text-white shadow-md" 
-          : "text-gray-700 hover:bg-gray-100"
-      }`}
-    >
-      {icon}
-      <span>{label}</span>
-    </Link>
-  );
-}
-
-function KelolaUsers() {
   const [users, setUsers] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [modalOpen, setModalOpen] = useState(false);
-  const [editUser, setEditUser] = useState(null);
-  const [form, setForm] = useState({
-    nama: "",
-    nipd: "",
-    email: "",
-    kelas: "",
-    role: "user",
-    password: "",
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterKelas, setFilterKelas] = useState('Semua');
+  const [showModal, setShowModal] = useState(false);
+  const [editingUser, setEditingUser] = useState(null);
+  const [formData, setFormData] = useState({
+    nama: '',
+    email: '',
+    kelas: '',
+    password: ''
   });
+  const [submitLoading, setSubmitLoading] = useState(false);
 
-  // Fetch users
+  // Fetch users dari API
   const fetchUsers = async () => {
-    setLoading(true);
     try {
-      const res = await fetch("/api/users");
-      const data = await res.json();
-      setUsers(data.data || []);
+      setLoading(true);
+      setError('');
+      const response = await fetch('/api/users');
+      const result = await response.json();
+      
+      if (result.success) {
+        setUsers(result.data);
+      } else {
+        setError(result.error || 'Gagal memuat data user');
+      }
     } catch (err) {
-      console.error(err);
+      setError('Gagal terhubung ke server: ' + err.message);
     } finally {
       setLoading(false);
     }
@@ -150,336 +53,396 @@ function KelolaUsers() {
     fetchUsers();
   }, []);
 
-  // Handle submit (add/edit)
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    
+  const filteredUsers = users.filter(user => {
+    const matchSearch = user.nama?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                        user.email?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchKelas = filterKelas === 'Semua' || user.kelas === filterKelas;
+    return matchSearch && matchKelas;
+  });
+
+  const kelasOptions = ['Semua', ...new Set(users.map(u => u.kelas).filter(Boolean))];
+
+  const handleOpenModal = (user = null) => {
+    if (user) {
+      setEditingUser(user);
+      setFormData({
+        id: user.id,
+        nama: user.nama,
+        email: user.email,
+        kelas: user.kelas,
+        password: ''
+      });
+    } else {
+      setEditingUser(null);
+      setFormData({
+        nama: '',
+        email: '',
+        kelas: '',
+        password: ''
+      });
+    }
+    setShowModal(true);
+  };
+
+  const handleCloseModal = () => {
+    setShowModal(false);
+    setEditingUser(null);
+    setFormData({ nama: '', email: '', kelas: '', password: '' });
+    setError('');
+  };
+
+  const handleSubmit = async () => {
+    if (!formData.nama || !formData.email || !formData.kelas) {
+      setError('Nama, Email, dan Kelas wajib diisi!');
+      return;
+    }
+    if (!editingUser && !formData.password) {
+      setError('Password wajib diisi untuk user baru!');
+      return;
+    }
     try {
-      const url = editUser ? `/api/users/${editUser.id}` : "/api/users";
-      const method = editUser ? "PUT" : "POST";
-      
-      const res = await fetch(url, {
+      setSubmitLoading(true);
+      setError('');
+      const method = editingUser ? 'PUT' : 'POST';
+      const response = await fetch('/api/users', {
         method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
       });
-
-      if (res.ok) {
-        alert(editUser ? "User berhasil diupdate!" : "User berhasil ditambahkan!");
-        resetForm();
-        fetchUsers();
+      const result = await response.json();
+      if (result.success) {
+        await fetchUsers();
+        handleCloseModal();
+        alert(result.message || 'Berhasil menyimpan data');
+      } else {
+        setError(result.error || 'Gagal menyimpan data');
       }
     } catch (err) {
-      console.error(err);
-      alert("Terjadi kesalahan");
+      setError('Gagal terhubung ke server: ' + err.message);
+    } finally {
+      setSubmitLoading(false);
     }
   };
 
-  // Handle delete
-  const handleDelete = async (id) => {
-    if (!confirm("Yakin ingin menghapus user ini?")) return;
-
+  const handleDelete = async (user) => {
+    if (!window.confirm(`Apakah Anda yakin ingin menghapus user "${user.nama}"?`)) return;
     try {
-      const res = await fetch(`/api/users/${id}`, {
-        method: "DELETE",
+      const response = await fetch('/api/users', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: user.id }),
       });
-
-      if (res.ok) {
-        alert("User berhasil dihapus!");
-        fetchUsers();
+      const result = await response.json();
+      if (result.success) {
+        await fetchUsers();
+        alert(result.message || 'User berhasil dihapus');
+      } else {
+        alert('Gagal menghapus user: ' + result.error);
       }
     } catch (err) {
-      console.error(err);
-      alert("Gagal menghapus user");
+      alert('Gagal terhubung ke server: ' + err.message);
     }
   };
-
-  // Open edit modal
-  const openEdit = (user) => {
-    setEditUser(user);
-    setForm({
-      nama: user.nama,
-      nipd: user.nipd || "",
-      email: user.email,
-      kelas: user.kelas,
-      role: user.role,
-      password: "",
-    });
-    setModalOpen(true);
-  };
-
-  // Reset form
-  const resetForm = () => {
-    setForm({
-      nama: "",
-      nipd: "",
-      email: "",
-      kelas: "",
-      role: "user",
-      password: "",
-    });
-    setEditUser(null);
-    setModalOpen(false);
-  };
-
-  // Filter users
-  const filteredUsers = users.filter(user => 
-    user.nama?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.nipd?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-4">
-          <div className="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center">
-            <HiOutlineUsers className="text-blue-600" size={32} />
-          </div>
-          <div>
-            <h1 className="text-3xl font-bold text-gray-800">Kelola Users</h1>
-            <p className="text-gray-500 text-sm mt-1">Manajemen data pengguna perpustakaan</p>
+    <div className="min-h-screen bg-white flex flex-col">
+      {/* NAVBAR */}
+      <header
+        className={`fixed top-0 left-0 right-0 flex items-center justify-between px-8 py-4 bg-white border-b shadow-sm z-40 transition-all duration-300 ${
+          sidebarOpen ? "pl-72" : "pl-8"
+        }`}
+      >
+        <div className="flex items-center space-x-4">
+          <button onClick={() => setSidebarOpen(!sidebarOpen)}>
+            <AiOutlineMenu size={28} className="text-blue-950" />
+          </button>
+          <div className="flex items-center space-x-2">
+            <img src="/logo.png" className="w-8 h-8 object-contain" alt="Logo" />
+            <span className="text-blue-950 font-extrabold text-lg select-none">
+              Admin Dashboard
+            </span>
           </div>
         </div>
-        
-        <button
-          onClick={() => {
-            resetForm();
-            setModalOpen(true);
-          }}
-          className="flex items-center gap-2 px-5 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition font-medium shadow-md"
-        >
-          <span className="text-xl">+</span>
-          Tambah User
-        </button>
-      </div>
-
-      {/* Search Box */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <div className="relative">
-          <svg className="w-5 h-5 absolute left-4 top-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-          </svg>
+        <div className="flex-grow max-w-md">
           <input
-            type="text"
-            placeholder="Cari user (nama, NIPD, email)..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            type="search"
+            placeholder="Search...."
+            className="rounded-full text-sm w-full px-4 py-2 bg-blue-900 text-white placeholder-white focus:outline-none"
           />
         </div>
-      </div>
+      </header>
 
-      {/* Table */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
-              <tr>
-                <th className="text-left p-4 text-sm font-semibold text-gray-600">ID</th>
-                <th className="text-left p-4 text-sm font-semibold text-gray-600">NIPD</th>
-                <th className="text-left p-4 text-sm font-semibold text-gray-600">NAMA</th>
-                <th className="text-left p-4 text-sm font-semibold text-gray-600">EMAIL</th>
-                <th className="text-left p-4 text-sm font-semibold text-gray-600">ROLE</th>
-                <th className="text-left p-4 text-sm font-semibold text-gray-600">AKSI</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {loading ? (
-                <tr>
-                  <td colSpan={6} className="p-8 text-center text-gray-500">
-                    <div className="flex items-center justify-center gap-2">
-                      <div className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-                      Memuat data...
-                    </div>
-                  </td>
-                </tr>
-              ) : filteredUsers.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="p-8 text-center text-gray-500">
-                    Tidak ada data user
-                  </td>
-                </tr>
-              ) : (
-                filteredUsers.map((user) => (
-                  <UserRow 
-                    key={user.id} 
-                    user={user} 
-                    onEdit={openEdit}
-                    onDelete={handleDelete}
-                  />
-                ))
-              )}
-            </tbody>
-          </table>
+      {/* OVERLAY */}
+      {sidebarOpen && (
+        <div className="fixed inset-0 bg-black/30 z-30" onClick={() => setSidebarOpen(false)} />
+      )}
+
+      {/* SIDEBAR */}
+      <aside
+        className={`fixed top-0 left-0 h-full w-72 bg-blue-950 text-white p-6 rounded-tr-lg rounded-br-lg z-40 shadow-xl transform transition-transform duration-300 ${
+          sidebarOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
+        <div className="flex items-center gap-3 mb-10 cursor-pointer">
+          <img src="/pretty.jpg" className="w-10 h-10 rounded-2xl" alt="Admin" />
+          <div className="flex flex-col">
+            <p className="font-semibold">Moza Admin</p>
+            <p className="text-sm text-gray-300">Admin</p>
+          </div>
         </div>
-      </div>
+        <nav className="flex flex-col gap-5 text-sm font-semibold">
+          <MenuItem icon={<AiOutlineHome size={22} />} label="Dashboard" link="/admin/dashboard" />
+          <MenuItem icon={<FiLayers size={22} />} label="Data Buku" link="/admin/kelolabuku" />
+          <MenuItem icon={<MdOutlineLibraryBooks size={22} />} label="Data User" link="/admin/kelolauser" />
+          <MenuItem icon={<RiRefund2Line size={22} />} label="Peminjaman" link="/admin/peminjamans" />
+          <div className="border-t border-white/20 pt-5">
+            <MenuItem icon={<AiOutlineLogout size={22} />} label="Logout" danger link="/logout" />
+          </div>
+        </nav>
+      </aside>
 
-      {/* Modal Add/Edit User */}
-      {modalOpen && (
-        <>
-          <div 
-            className="fixed inset-0 bg-black/40 z-40"
-            onClick={resetForm}
-          />
-          <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-4x1 shadow-2xl w-full max-w-md">
-              <div className="p-6 border-b border-gray-200">
-                <h2 className="text-2xl font-bold text-gray-800">
-                  {editUser ? "Edit User" : "Tambah User Baru"}
-                </h2>
-                <p className="text-sm text-gray-500 mt-1">
-                  Lengkapi formulir di bawah ini
-                </p>
+      {/* MAIN CONTENT */}
+      <main className={`pt-24 px-10 pb-20 transition-all duration-300 ${sidebarOpen ? "ml-72" : "ml-0"}`}>
+        <div className="max-w-7xl mx-auto">
+          {/* Header */}
+          <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+            <h1 className="text-3xl font-bold text-gray-800 mb-2">Kelola User</h1>
+            <p className="text-gray-600">Sistem Manajemen Perpustakaan</p>
+          </div>
+
+          {/* Error Alert Global */}
+          {error && !showModal && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6 flex items-start gap-3">
+              <AlertCircle className="text-red-600 flex-shrink-0 mt-0.5" size={20} />
+              <div className="flex-1">
+                <p className="text-red-800 font-medium">Error</p>
+                <p className="text-red-600 text-sm">{error}</p>
               </div>
+              <button onClick={() => setError('')} className="text-red-400 hover:text-red-600">
+                <X size={20} />
+              </button>
+            </div>
+          )}
 
-              <div className="p-6 space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Nama Lengkap <span className="text-red-500">*</span>
-                  </label>
+          {/* Filters & Search */}
+          <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="md:col-span-2">
+                <label className="block text-4x1 font-semibold text-blue-950 mb-2">Cari User</label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
                   <input
                     type="text"
-                    value={form.nama}
-                    onChange={(e) => setForm({ ...form, nama: e.target.value })}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Masukkan nama lengkap"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    NIPD
-                  </label>
-                  <input
-                    type="text"
-                    value={form.nipd}
-                    onChange={(e) => setForm({ ...form, nipd: e.target.value })}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Nomor Induk Siswa"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Email <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="email"
-                    value={form.email}
-                    onChange={(e) => setForm({ ...form, email: e.target.value })}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="email@example.com"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Kelas
-                  </label>
-                  <input
-                    type="text"
-                    value={form.kelas}
-                    onChange={(e) => setForm({ ...form, kelas: e.target.value })}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Contoh: XII IPA 1"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Role <span className="text-red-500">*</span>
-                  </label>
-                  <select
-                    value={form.role}
-                    onChange={(e) => setForm({ ...form, role: e.target.value })}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="user">User</option>
-                    <option value="admin">Admin</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Password {!editUser && <span className="text-red-500">*</span>}
-                  </label>
-                  <input
-                    type="password"
-                    value={form.password}
-                    onChange={(e) => setForm({ ...form, password: e.target.value })}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder={editUser ? "Kosongkan jika tidak diubah" : "Masukkan password"}
-                    required={!editUser}
+                    placeholder="Cari nama atau email..."
+                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
                   />
                 </div>
               </div>
-
-              <div className="p-6 border-t border-gray-200 flex justify-end gap-3">
-                <button
-                  type="button"
-                  onClick={resetForm}
-                  className="px-5 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition font-medium"
+              <div>
+                <label className="block text-4x1 font-semibold text-blue-950 mb-2">Filter Kelas</label>
+                <select
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  value={filterKelas}
+                  onChange={(e) => setFilterKelas(e.target.value)}
                 >
-                  Batal
-                </button>
-                <button
-                  onClick={handleSubmit}
-                  className="px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium"
-                >
-                  {editUser ? "Update" : "Simpan"}
-                </button>
+                  {kelasOptions.map(kelas => (
+                    <option key={kelas} value={kelas}>{kelas}</option>
+                  ))}
+                </select>
               </div>
             </div>
+            <button
+              onClick={() => handleOpenModal()}
+              className="mt-4 bg-blue-950 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
+            >
+              <Plus size={20} />
+              Tambah User Baru
+            </button>
           </div>
-        </>
-      )}
+
+          {/* Table User */}
+          <div className="bg-white rounded-lg shadow-md overflow-hidden">
+            {loading ? (
+              <div className="text-center py-12">
+                <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-blue-950 border-t-transparent"></div>
+                <p className="mt-4 text-gray-600">Memuat data...</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-gradient-to-r from-blue-950 to-indigo-600 text-white">
+                    <tr>
+                      <th className="px-6 py-4 text-left text-sm font-semibold">ID</th>
+                      <th className="px-6 py-4 text-left text-sm font-semibold">Nama</th>
+                      <th className="px-6 py-4 text-left text-sm font-semibold">Email</th>
+                      <th className="px-6 py-4 text-left text-sm font-semibold">Kelas</th>
+                      <th className="px-6 py-4 text-left text-sm font-semibold">Terdaftar</th>
+                      <th className="px-6 py-4 text-center text-sm font-semibold">Aksi</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    {filteredUsers.map((user) => (
+                      <tr key={user.id} className="hover:bg-gray-50 transition-colors">
+                        <td className="px-6 py-4 text-sm text-gray-700">{user.id}</td>
+                        <td className="px-6 py-4 text-sm font-medium text-gray-900">{user.nama}</td>
+                        <td className="px-6 py-4 text-sm text-gray-600">{user.email}</td>
+                        <td className="px-6 py-4 text-sm">
+                          <span className="px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
+                            {user.kelas}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-600">
+                          {new Date(user.created_at).toLocaleDateString('id-ID')}
+                        </td>
+                        <td className="px-6 py-4 text-sm">
+                          <div className="flex justify-center gap-2">
+                            <button
+                              onClick={() => handleOpenModal(user)}
+                              className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                              title="Edit"
+                            >
+                              <Edit2 size={18} />
+                            </button>
+                            <button
+                              onClick={() => handleDelete(user)}
+                              className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                              title="Hapus"
+                            >
+                              <Trash2 size={18} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {filteredUsers.length === 0 && (
+                  <div className="text-center py-12 text-gray-500">
+                    <UserPlus size={48} className="mx-auto mb-4 opacity-50" />
+                    <p>Tidak ada data user yang ditemukan</p>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Modal */}
+          {showModal && (
+            <div className="fixed inset-0 bg-opacity-50 flex items-center justify-center p-4 z-50">
+              <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                <div className="sticky top-0  bg-blue-950 text-white p-6 flex justify-between items-center">
+                  <h2 className="text-2xl font-bold">
+                    {editingUser ? 'Edit User' : 'Tambah User Baru'}
+                  </h2>
+                  <button
+                    onClick={handleCloseModal}
+                    className="p-2 hover:bg-white hover:bg-opacity-20 rounded-lg transition-colors"
+                  >
+                    <X size={24} />
+                  </button>
+                </div>
+                
+                <div className="p-6">
+                  {error && (
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4 flex items-start gap-3">
+                      <AlertCircle className="text-red-600 flex-shrink-0 mt-0.5" size={20} />
+                      <p className="text-red-800 text-sm flex-1">{error}</p>
+                    </div>
+                  )}
+
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Nama Lengkap <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        className="w-full px-4 py-2 border text-black border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        value={formData.nama}
+                        onChange={(e) => setFormData({...formData, nama: e.target.value})}
+                        placeholder="Masukkan nama lengkap"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Email <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="email"
+                        className="w-full px-4 py-2 border text-black border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        value={formData.email}
+                        onChange={(e) => setFormData({...formData, email: e.target.value})}
+                        placeholder="contoh@email.com"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Kelas <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        className="w-full px-4 py-2 border text-black border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        value={formData.kelas}
+                        onChange={(e) => setFormData({...formData, kelas: e.target.value})}
+                        placeholder="Contoh: X IPA 1"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Password {!editingUser && <span className="text-red-500">*</span>}
+                        {editingUser && <span className="text-gray-500 text-xs">(kosongkan jika tidak ingin mengubah)</span>}
+                      </label>
+                      <input
+                        type="password"
+                        className="w-full px-4 py-2 border text-black border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        value={formData.password}
+                        onChange={(e) => setFormData({...formData, password: e.target.value})}
+                        placeholder={editingUser ? "Biarkan kosong jika tidak ingin mengubah" : "Masukkan password"}
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="mt-6 flex gap-3 justify-end">
+                    <button
+                      onClick={handleCloseModal}
+                      className="px-4 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 transition"
+                    >
+                      Batal
+                    </button>
+                    <button
+                      onClick={handleSubmit}
+                      className="px-4 py-2 rounded-lg bg-blue-950 text-white hover:bg-blue-700 transition disabled:opacity-50"
+                      disabled={submitLoading}
+                    >
+                      {submitLoading ? 'Menyimpan...' : 'Simpan'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+        </div>
+      </main>
     </div>
   );
 }
 
-function UserRow({ user, onEdit, onDelete }) {
-  const roleColors = {
-    admin: "bg-purple-100 text-purple-700",
-    user: "bg-blue-100 text-blue-700",
-  };
-
+function MenuItem({ icon, label, danger, link }) {
   return (
-    <tr className="hover:bg-gray-50 transition">
-      <td className="p-4 text-gray-700">{user.id}</td>
-      <td className="p-4 text-gray-700 font-medium">{user.nipd || "-"}</td>
-      <td className="p-4 text-gray-900 font-medium">{user.nama}</td>
-      <td className="p-4 text-gray-600">{user.email}</td>
-      <td className="p-4">
-        <span className={`px-3 py-1 rounded-full text-xs font-semibold ${roleColors[user.role] || roleColors.user}`}>
-          {user.role}
-        </span>
-      </td>
-      <td className="p-4">
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => onEdit(user)}
-            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition"
-            title="Edit"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-            </svg>
-          </button>
-          <button
-            onClick={() => onDelete(user.id)}
-            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition"
-            title="Hapus"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-            </svg>
-          </button>
-        </div>
-      </td>
-    </tr>
+    <Link
+      href={link}
+      className={`flex items-center gap-3 p-2 rounded-lg cursor-pointer transition ${
+        danger ? "text-red-400 hover:text-red-500" : "hover:text-orange-400"
+      }`}
+    >
+      {icon}
+      <span>{label}</span>
+    </Link>
   );
 }

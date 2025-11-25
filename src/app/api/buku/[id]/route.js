@@ -1,19 +1,19 @@
 import { NextResponse } from "next/server";
-import pool from "@/lib/db";
+import db from "@/lib/db";
 
 export async function GET(_, { params }) {
   try {
     const { id } = params;
 
-    const [rows] = await pool.query(
+    const [rows] = await db.query(
       `SELECT 
          b.id_buku,
          b.judul,
-         b.penulis,
          b.penerbit,
-         b.tahun_terbit AS tahun,
+         b.pengarang,
+         b.tahun_terbit,
          b.stok,
-         b.deskripsi,
+         b.gambar,
          b.id_kategori,
          k.nama_kategori AS kategori
        FROM buku b
@@ -22,16 +22,20 @@ export async function GET(_, { params }) {
       [id]
     );
 
-    if (rows.length === 0) {
+    if (!rows.length) {
       return NextResponse.json(
         { success: false, message: "Buku tidak ditemukan" },
         { status: 404 }
       );
     }
 
-    return NextResponse.json({ success: true, data: rows[0] });
-  } catch (error) {
-    console.error("GET detail buku error:", error);
+    return NextResponse.json({
+      success: true,
+      data: rows[0],
+    });
+
+  } catch (err) {
+    console.error("GET detail buku error:", err);
     return NextResponse.json(
       { success: false, message: "Gagal mengambil detail buku" },
       { status: 500 }

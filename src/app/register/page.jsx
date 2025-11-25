@@ -26,11 +26,11 @@ export default function Register() {
         body: JSON.stringify(data)
       });
       const result = await res.json();
-      alert(result.message);
+      // alert(result.message);
 
       if (result.success) {
         form.reset();
-        router.push("/user/homepagesiswa");
+        router.push("/login");
       }
     } catch (err) {
       alert("Terjadi kesalahan, coba lagi");

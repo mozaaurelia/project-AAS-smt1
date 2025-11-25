@@ -146,7 +146,7 @@ function TabButton({ active, onClick, children }) {
             onClick={onClick}
             className={`flex-grow py-3 font-semibold text-center cursor-pointer select-none transition ${active ? "bg-[#28366E] text-white" : "bg-transparent text-[#28366E]/70 hover:bg-[#28366E]/20"
                 }`}
-        >
+        >   
             {children}
         </button>
     );
