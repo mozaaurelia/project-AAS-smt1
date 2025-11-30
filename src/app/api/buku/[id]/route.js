@@ -11,9 +11,6 @@ export async function GET(_, { params }) {
          b.judul,
          b.penerbit,
          b.pengarang,
-         b.tahun_terbit,
-         b.stok,
-         b.gambar,
          b.id_kategori,
          k.nama_kategori AS kategori
        FROM buku b

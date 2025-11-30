@@ -1,153 +1,199 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import {
-    AiOutlineMenu,
-    AiOutlineSearch,
-    AiOutlineHome,
-    AiOutlineSetting,
-    AiOutlineLogout,
+  AiOutlineMenu,
+  AiOutlineLogout,
+  AiOutlineBook,
 } from "react-icons/ai";
-import { FaShoppingBag, FaBook } from "react-icons/fa";
+import { FiLayers } from "react-icons/fi";
+import { MdOutlineLibraryBooks } from "react-icons/md";
+import { RiRefund2Line } from "react-icons/ri";
+import { signOut } from "next-auth/react";
+import { useSession } from "next-auth/react";
 
 export default function ProfilePage() {
-    const [sidebarOpen, setSidebarOpen] = useState(false);
-    const [activeTab, setActiveTab] = useState("peminjaman");
+  const { data: session } = useSession();
+  const user = session?.user;
 
-    return (
-        <div className="min-h-screen bg-white flex">
-            {/* Sidebar */}
-            <aside
-                className={`fixed top-0 left-0 h-full w-72 bg-[#28366E] text-white p-6 z-40 transform transition-transform duration-300 rounded-tr-lg rounded-br-lg shadow-lg ${sidebarOpen ? "translate-x-0" : "-translate-x-full"
-                    }`}
+  const [open, setOpen] = useState(false);
+
+  // State untuk form
+  const [profile, setProfile] = useState({
+    nama: user?.name || "",
+    nipd: user?.nipd || "",
+    kelas: user?.kelas || "",
+    jurusan: user?.jurusan || "",
+    email: user?.email || "",
+  });
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setProfile({ ...profile, [name]: value });
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    console.log("Profile updated:", profile);
+    alert("Profile berhasil diupdate!");
+    // nanti bisa diganti dengan API call untuk simpan ke database
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      {/* NAVBAR */}
+      <header
+        className={`fixed top-0 left-0 right-0 flex items-center justify-between px-8 py-4 bg-white border-b z-40 transition-all duration-300 ${
+          open ? "pl-72" : "pl-8"
+        }`}
+      >
+        <div className="flex items-center space-x-4">
+          <button onClick={() => setOpen(!open)}>
+            <AiOutlineMenu size={28} className="text-[#28366E]" />
+          </button>
+
+          <div className="flex items-center space-x-2">
+            <img src="/logo.png" className="w-8 h-8 object-contain" />
+            <span className="text-[#28366E] font-extrabold text-lg select-none">
+              Bookith!
+            </span>
+          </div>
+        </div>
+
+        <div className="flex-grow max-w-md">
+          <input
+            type="search"
+            placeholder="Search...."
+            className="rounded-full text-sm w-full px-4 py-2 bg-[#28366E] text-white placeholder-white focus:outline-none"
+          />
+        </div>
+      </header>
+
+      {/* SIDEBAR */}
+      <aside
+        className={`fixed top-0 left-0 h-full w-72 bg-[#1E2B60] text-white p-6 rounded-tr-lg rounded-br-lg z-40 shadow-lg transform transition-transform duration-300 ${
+          open ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
+        <div className="flex items-center gap-3 mb-10 cursor-pointer">
+          <img src="/pretty.jpg" className="w-10 h-10 rounded-2xl" />
+          <div className="flex flex-col">
+            <p className="font-semibold">{`${user?.name || "Theressa"}  ${user?.kelas || "XI RPL 5"}`}</p>
+            <p className="text-sm text-blue-950">{user?.role === "user" ? "Siswa" : user?.role}</p>
+          </div>
+        </div>
+
+        <nav className="flex flex-col gap-5 text-sm font-semibold">
+          <MenuItem icon={<AiOutlineBook size={22} />} label="Profile" link="/user/profile" />
+          <MenuItem icon={<MdOutlineLibraryBooks size={22} />} label="Buku Dipinjam" link="/user/peminjaman" />
+          <MenuItem icon={<RiRefund2Line size={22} />} label="Peminjaman & Pengembalian" link="/user/riwayat" />
+          <MenuItem icon={<FiLayers size={22} />} label="Kategori Buku" link="/user/kategori" />
+
+          <div className="border-t border-white/20 pt-5">
+            <button
+              className="flex items-center gap-3 p-2 rounded-lg cursor-pointer transition hover:bg-white/10"
+              onClick={signOut}
             >
-                {/* Profile */}
-                <div className="flex items-center space-x-4 pb-8 border-b border-white/20">
-                    <img
-                        src="/pretty.jpg"
-                        alt="Profile"
-                        className="w-12 h-12 rounded-full object-cover"
-                    />
-                    <div>
-                        <p className="font-semibold">Theressa XI RPL 5</p>
-                        <p className="text-sm text-gray-300">Siswa</p>
-                    </div>
-                </div>
+              <AiOutlineLogout size={22} />Log out
+            </button>
+          </div>
+        </nav>
+      </aside>
 
-                {/* Menu */}
-                <nav className="mt-8 space-y-6 text-sm font-semibold">
-                    <MenuItem icon={<AiOutlineHome size={20} />} label="Home Page" />
-                    <MenuItem icon={<AiOutlineSetting size={20} />} label="Setting" />
-                    <MenuItem icon={<FaShoppingBag size={18} />} label="Borrowing" />
-                    <MenuItem icon={<AiOutlineLogout size={20} />} label="Log out" />
-                </nav>
-            </aside>
-
-            {/* Main section */}
-            <div className="flex-grow flex flex-col max-w-5xl mx-auto px-6">
-                {/* Header */}
-                <header
-                    className={`fixed top-0 left-0 right-0 flex items-center justify-between px-8 py-4 bg-white border-b border-gray-200 z-50 transition-all duration-300 ${sidebarOpen ? "pl-80" : "pl-8"
-                        }`}
-                >
-                    <div className="flex items-center space-x-4">
-                        <button
-                            onClick={() => setSidebarOpen(!sidebarOpen)}
-                            aria-label={sidebarOpen ? "Close menu" : "Open menu"}
-                            className="text-[#28366E] text-3xl focus:outline-none"
-                        >
-                            <AiOutlineMenu />
-                        </button>
-                        <div className="flex items-center space-x-2 text-[#28366E] font-extrabold text-lg select-none">
-                            <FaBook className="w-8 h-8" />
-                            <span>Bookith!</span>
-                        </div>
-                    </div>
-
-                    <div className="relative w-64">
-                        <input
-                            type="search"
-                            placeholder="Search...."
-                            className="w-full rounded-full py-2 px-4 pr-10 bg-[#28366E] text-white placeholder-white focus:outline-none focus:ring-2 focus:ring-[#3453b0]"
-                        />
-                        <AiOutlineSearch
-                            size={20}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-white pointer-events-none"
-                        />
-                    </div>
-                </header>
-
-                {/* Content */}
-                <main
-                    className={`pt-20 transition-margin duration-300 ${sidebarOpen ? "pl-80" : "pl-8"
-                        }`}
-                >
-                    {/* Profile */}
-                    <div className="flex items-center space-x-4 pb-8 border-b border-white/20">
-                        <img
-                            src="/pretty.jpg"
-                            alt="Profile"
-                            className="w-40 h-40 rounded-full object-cover"
-                        />
-                        <div>
-                            <p className="font-semibold text-blue-950">Theressa XI RPL 5</p>
-                            <p className="text-sm text-blue-950">Siswa</p>
-                        </div>
-                    </div>
-
-                    {/* Form inputs */}
-                    <form className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-full mb-8">
-                        <InputField label="Nama lengkap" placeholder="Enter your name" />
-                        <InputField label="NIPD" placeholder="Enter your NIPD" />
-                        <InputField label="Kelas" placeholder="Enter your class" />
-                        <InputField label="Jurusan" placeholder="Enter your major" />
-                    </form>
-
-                    {/* Tabs */}
-                    <div className="flex border-y border-[#28366E] rounded-2xl   overflow-hidden max-w-full">
-                        <TabButton active={activeTab === "peminjaman"} onClick={() => setActiveTab("peminjaman")}>
-                            Peminjaman
-                        </TabButton>
-                        <TabButton active={activeTab === "pengembalian"} onClick={() => setActiveTab("pengembalian")}>
-                            Pengembalian
-                        </TabButton>
-                    </div>
-                </main>
-            </div>
+      {/* MAIN CONTENT */}
+      <main
+        className={`pt-24 px-8 pb-20 transition-all duration-300 ${
+          open ? "ml-72" : "ml-0"
+        }`}
+      >
+        {/* Profile Card */}
+        <div className="flex flex-col md:flex-row items-center bg-white shadow-md rounded-3xl p-6 mb-8">
+          <img
+            src="/pretty.jpg"
+            alt="Profile"
+            className="w-40 h-40 rounded-full object-cover border-4 border-blue-100 shadow-lg mb-4 md:mb-0"
+          />
+          <div className="md:ml-6 text-center md:text-left">
+            <p className="font-bold text-2xl text-blue-950">{user?.name || "Theressa XI RPL 5"}</p>
+            <p className="text-gray-600 text-lg mt-1">{user?.role === "user" ? "Siswa" : user?.role}</p>
+          </div>
         </div>
-    );
+
+        {/* Form inputs */}
+        <form
+          className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-full mb-8"
+          onSubmit={handleSubmit}
+        >
+          <InputField
+            label="Nama lengkap"
+            name="nama"
+            value={profile.nama}
+            onChange={handleChange}
+            placeholder="Enter your name"
+          />
+          <InputField
+            label="Email"
+            name="email"
+            value={profile.email}
+            onChange={handleChange}
+            placeholder="Enter your Email"
+          />
+          <InputField
+            label="Kelas"
+            name="kelas"
+            value={profile.kelas}
+            onChange={handleChange}
+            placeholder="Enter your class"
+          />
+          <InputField
+            label="Jurusan"
+            name="jurusan"
+            value={profile.jurusan}
+            onChange={handleChange}
+            placeholder="Enter your major"
+          />
+
+          {/* Submit Button */}
+          <div className="col-span-1 md:col-span-2 flex justify-end">
+            <button
+              type="submit"
+              className="bg-blue-950 text-white px-6 py-3 rounded-xl font-semibold shadow-md hover:bg-orange-400 hover:text-white transition"
+            >
+              Save Changes
+            </button>
+          </div>
+        </form>
+      </main>
+    </div>
+  );
 }
 
-function MenuItem({ icon, label }) {
-    return (
-        <div className="flex items-center space-x-3 cursor-pointer hover:text-orange-400 transition text-white">
-            {icon}
-            <span>{label}</span>
-        </div>
-    );
+/* ===== COMPONENTS ===== */
+function MenuItem({ icon, label, link }) {
+  return (
+    <Link
+      href={link}
+      className="flex items-center gap-3 p-2 rounded-lg cursor-pointer transition hover:bg-white/10"
+    >
+      {icon}
+      <span>{label}</span>
+    </Link>
+  );
 }
 
-function InputField({ label, placeholder }) {
-    return (
-        <div className="flex flex-col">
-            <label className="mb-2 font-semibold text-[#28366E]">{label}</label>
-            <input
-                type="text"
-                placeholder={placeholder}
-                className="border border-gray-300 rounded-md px-4 py-2 text-[#28366E] placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#28366E]"
-            />
-        </div>
-    );
-}
-
-function TabButton({ active, onClick, children }) {
-    return (
-        <button
-            onClick={onClick}
-            className={`flex-grow py-3 font-semibold text-center cursor-pointer select-none transition ${active ? "bg-[#28366E] text-white" : "bg-transparent text-[#28366E]/70 hover:bg-[#28366E]/20"
-                }`}
-        >   
-            {children}
-        </button>
-    );
+function InputField({ label, name, value, onChange, placeholder }) {
+  return (
+    <div className="flex flex-col">
+      <label className="mb-2 font-semibold text-blue-950">{label}</label>
+      <input
+        type="text"
+        name={name}
+        value={value}
+        onChange={onChange}
+        placeholder={placeholder}
+        className="border border-gray-300 rounded-xl px-4 py-2 text-blue-950 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-400 shadow-sm transition"
+      />
+    </div>
+  );
 }

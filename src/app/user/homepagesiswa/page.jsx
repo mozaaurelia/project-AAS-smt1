@@ -14,13 +14,17 @@ import { RiRefund2Line } from "react-icons/ri";
 import { getBookCoverSrc } from "@/utils/imageHelper";
 import { signOut } from "next-auth/react";
 import { useSession } from "next-auth/react"
+import { useRouter } from "next/navigation";
 
 export default function Home() {
-  const { data: session, status } = useSession()
+  const { data: session } = useSession()
+  const router = useRouter();
 
   const user = session?.user
 
   const [open, setOpen] = useState(false);
+  const [isLogoutOpen, setIsLogoutOpen] = useState(false); // ✅ modal logout
+
   const [bukuData, setBukuData] = useState([]);
   const [filteredBuku, setFilteredBuku] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState("All");
@@ -36,7 +40,11 @@ export default function Home() {
     { id: "5", label: "Sejarah" },
   ];
 
-  // Fetch buku dari API
+  const handleLogout = async () => {
+    await signOut({ redirect: false });
+    router.push("/user/landingpage");   // ✅ langsung ke landingpage
+  };
+
   const fetchBuku = async () => {
     try {
       setLoading(true);
@@ -46,11 +54,9 @@ export default function Home() {
       if (data.success) {
         setBukuData(data.data);
         setFilteredBuku(data.data);
-      } else {
-        console.error("Gagal fetch buku:", data.error);
       }
-    } catch (error) {
-      console.error("Gagal fetch buku:", error);
+    } catch (e) {
+      console.error(e);
     } finally {
       setLoading(false);
     }
@@ -60,18 +66,15 @@ export default function Home() {
     fetchBuku();
   }, []);
 
-  // Search + filter
   useEffect(() => {
     let filtered = bukuData;
 
-    // Filter by kategori
     if (selectedCategory !== "All") {
       filtered = filtered.filter(
-        (book) => book.id_kategori?.toString() === selectedCategory.toString()
+        (book) => book.id_kategori?.toString() === selectedCategory
       );
     }
 
-    // Search
     if (searchQuery) {
       filtered = filtered.filter(
         (book) =>
@@ -98,7 +101,7 @@ export default function Home() {
 
           <div className="flex items-center space-x-2">
             <img src="/logo.png" className="w-8 h-8 object-contain" />
-            <span className="text-[#28366E] font-extrabold text-lg select-none">
+            <span className="text-[#28366E] font-extrabold text-lg">
               Bookith!
             </span>
           </div>
@@ -124,49 +127,28 @@ export default function Home() {
         <div className="flex items-center gap-3 mb-10 cursor-pointer">
           <img src="/pretty.jpg" className="w-10 h-10 rounded-2xl" />
           <div className="flex flex-col">
-            <p className="font-semibold">{`${user?.name}  ${user?.kelas}`}</p>
-            <p className="text-sm text-gray-300">{user?.role == "user" ? "Siswa" : user?.role}</p>
+            <p className="font-semibold">{`${user?.name} ${user?.kelas}`}</p>
+            <p className="text-sm text-gray-300">
+              {user?.role === "user" ? "Siswa" : user?.role}
+            </p>
           </div>
         </div>
 
         <nav className="flex flex-col gap-5 text-sm font-semibold">
-          <MenuItem
-            icon={<AiOutlineHome size={22} />}
-            label="Dashboard"
-            link="/user/homepagesiswa"
-          />
-          <MenuItem
-            icon={<FiLayers size={22} />}
-            label="Kategori Buku"
-            link="/user/kategori"
-          />
-          <MenuItem
-            icon={<MdOutlineLibraryBooks size={22} />}
-            label="Buku Dipinjam"
-            link="/user/peminjaman"
-          />
-          <MenuItem
-            icon={<RiRefund2Line size={22} />}
-            label="Peminjaman & Pengembalian"
-            link="/user/pengembalian"
-          />
-          <MenuItem
-            icon={<AiOutlineBook size={22} />}
-            label="Profile"
-            link="/user/profile"
-          />
+          <MenuItem icon={<AiOutlineHome size={22} />} label="Dashboard" link="/user/homepagesiswa" />
+          <MenuItem icon={<FiLayers size={22} />} label="Kategori Buku" link="/user/kategori" />
+          <MenuItem icon={<MdOutlineLibraryBooks size={22} />} label="Buku Dipinjam" link="/user/peminjaman" />
+          <MenuItem icon={<RiRefund2Line size={22} />} label="Peminjaman & Pengembalian" link="/user/riwayat" />
+          <MenuItem icon={<AiOutlineBook size={22} />} label="Profile" link="/user/profile" />
 
           <div className="border-t border-white/20 pt-5">
-            {/* <MenuItem
-              icon={<AiOutlineLogout size={22} />}
-              label="Logout"
-              danger
-              link="/logout"
-            /> */}
+            {/* BUTTON LOGOUT + MODAL */}
             <button
-              className="flex items-center gap-3 p-2 rounded-lg cursor-pointer transition hover:bg-white/10"
-              onClick={signOut}
-            ><AiOutlineLogout size={22} />Log out</button>
+              className="flex items-center gap-3 p-2 rounded-lg hover:bg-white/10"
+              onClick={() => setIsLogoutOpen(true)}
+            >
+              <AiOutlineLogout size={22} /> Logout
+            </button>
           </div>
         </nav>
       </aside>
@@ -177,27 +159,22 @@ export default function Home() {
           open ? "ml-72" : "ml-0"
         }`}
       >
-        {/* BANNER */}
         <div className="w-full max-w-7xl mt-10 mb-14">
-          <img
-            src="/benner.jpg"
-            className="w-full h-72 md:h-82 object-cover ml-15 rounded-2xl shadow-md"
-          />
+          <img src="/benner.jpg" className="w-full h-72 rounded-2xl shadow-md object-cover" />
         </div>
 
-        {/* REKOMENDASI */}
         <section className="w-full max-w-7xl">
-          <div className="flex flex-col md:flex-row my-20 md:items-center md:justify-between gap-4 mb-8">
+          <div className="flex flex-col md:flex-row justify-between mb-8">
             <div>
               <h2 className="text-[#222253] font-extrabold text-2xl">
                 Top Book Recommendations
               </h2>
-              <p className="text-[#222253] text-sm mt-1">
+              <p className="text-[#222253] text-sm">
                 Special Picks • Just for You
               </p>
             </div>
 
-            <div className="flex gap-4 flex-wrap">
+            <div className="flex gap-4 h-10 flex-wrap">
               {categories.map((cat) => (
                 <FilterButton
                   key={cat.id}
@@ -209,11 +186,10 @@ export default function Home() {
             </div>
           </div>
 
-          {/* LIST BUKU */}
           {loading ? (
             <div className="text-center py-10">Loading books...</div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 mb-20 justify-items-center">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
               {filteredBuku.map((book) => (
                 <BookCard
                   key={book.id_buku}
@@ -227,16 +203,46 @@ export default function Home() {
           )}
         </section>
       </main>
+
+      {/* ========================== */}
+      {/* MODAL LOGOUT */}
+      {/* ========================== */}
+      {isLogoutOpen && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="bg-white w-[90%] md:w-[380px] rounded-lg shadow-xl p-6">
+            <h2 className="text-xl font-bold text-center text-[#28366E]">
+              Are you sure?
+            </h2>
+
+            <div className="flex justify-center gap-4 mt-6">
+              <button
+                onClick={() => setIsLogoutOpen(false)}
+                className="px-5 py-2 bg-gray-300 rounded-lg hover:bg-gray-400"
+              >
+                Cancel
+              </button>
+
+              <button
+                onClick={handleLogout}
+                className="px-5 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+              >
+                Yes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
 
-/* ===== COMPONENTS ===== */
-function MenuItem({ icon, label, danger, link }) {
+/* COMPONENTS */
+function MenuItem({ icon, label, link }) {
   return (
     <Link
       href={link}
-      className="flex items-center gap-3 p-2 rounded-lg cursor-pointer transition hover:bg-white/10"
+      className="flex items-center gap-3 p-2 rounded-lg hover:bg-white/10"
     >
       {icon}
       <span>{label}</span>
@@ -249,9 +255,7 @@ function FilterButton({ label, active, onClick }) {
     <button
       onClick={onClick}
       className={`rounded-full py-1.5 px-6 text-sm transition ${
-        active
-          ? "bg-orange-400 text-white"
-          : "bg-[#222253] text-white hover:bg-orange-400"
+        active ? "bg-orange-400 text-white" : "bg-[#222253] text-white hover:bg-orange-400"
       }`}
     >
       {label}
@@ -261,25 +265,17 @@ function FilterButton({ label, active, onClick }) {
 
 function BookCard({ id, image, title, author }) {
   return (
-    <Link
-      href={`/user/detail/${id}`}
-      className="w-52 cursor-pointer select-none flex flex-col items-center"
-    >
-        <img
-        src={getBookCoverSrc(image)}  // ✅ Langsung gunakan value dari database
+    <Link href={`/user/detail/${id}`} className="w-52 text-center">
+      <img
+        src={getBookCoverSrc(image)}
         className="rounded-xl w-52 h-64 object-cover shadow-md"
-        alt={title}
-        onError={(e) => {
-          e.currentTarget.src = '/placeholder.jpg'; // Gambar cadangan jika error
-        }}
+        onError={(e) => (e.currentTarget.src = "/placeholder.jpg")}
       />
 
-      <div className="text-center mt-4">
-        <h3 className="font-semibold text-base text-black">{title}</h3>
-        <p className="text-xs text-gray-700">{author}</p>
-      </div>
+      <h3 className="font-semibold text-blue-950 text-base mt-4">{title}</h3>
+      <p className="text-xs text-gray-700">{author}</p>
 
-      <button className="mt-4 bg-[#222253] text-white rounded-full py-1 text-sm w-24 shadow-sm hover:bg-orange-400 transition">
+      <button className="mt-3 bg-[#222253] text-white rounded-full py-1 w-24 hover:bg-orange-400 transition">
         Pinjam
       </button>
     </Link>

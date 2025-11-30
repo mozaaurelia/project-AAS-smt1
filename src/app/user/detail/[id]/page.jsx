@@ -27,8 +27,8 @@ export default function BookDetail() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [buku, setBuku] = useState(null);
 
-  const [tanggalPeminjaman, setTanggalPeminjaman] = useState("2025-11-14");
-  const [tanggalPengembalian, setTanggalPengembalian] = useState("2025-12-04");
+  const [tanggalPeminjaman, setTanggalPeminjaman] = useState("");
+  const [tanggalPengembalian, setTanggalPengembalian] = useState("");
 
   const openModal = () => setIsModalOpen(true);
   const closeModal = () => setIsModalOpen(false);
@@ -57,13 +57,48 @@ export default function BookDetail() {
     );
   }
 
+  const handleConfirm = async () => {
+    try {
+      const res = await fetch("/api/peminjaman", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id_user: user?.id,
+          id_buku: buku.id_buku,
+          tanggal_pinjam: tanggalPeminjaman,
+          tanggal_kembali: tanggalPengembalian,
+          status_pinjam: "pending",
+        }),
+      });
+
+      // console.log("==========PPPPPPPPPP===========", res)
+
+      const json = await res.json();
+
+
+      if (!res.ok) {
+        alert(json.message || "Gagal meminjam buku");
+        return;
+      }
+
+      // jika sukses
+      closeModal();
+      router.push("/user/homepagesiswa");
+      alert("Buku Berhasil Dipinjam")
+
+    } catch (error) {
+      console.log("Gagal kirim data:", error);
+      alert("Terjadi kesalahan saat meminjam");
+    }
+  };
+
+
   return (
     <div className="min-h-screen bg-white flex flex-col">
       {/* NAVBAR */}
       <header
-        className={`fixed top-0 left-0 right-0 flex items-center justify-between px-8 py-4 bg-white border-b z-40 transition-all duration-300 ${
-          sidebarOpen ? "pl-72" : "pl-8"
-        }`}
+        className={`fixed top-0 left-0 right-0 flex items-center justify-between px-8 py-4 bg-white border-b z-40 transition-all duration-300 ${sidebarOpen ? "pl-72" : "pl-8"
+          }`}
       >
         <div className="flex items-center space-x-4">
           <button onClick={() => setSidebarOpen(!sidebarOpen)}>
@@ -97,9 +132,8 @@ export default function BookDetail() {
 
       {/* SIDEBAR DINAMIS DARI LOGIN */}
       <aside
-        className={`fixed top-0 left-0 h-full w-72 bg-[#1E2B60] text-white p-6 rounded-tr-lg rounded-br-lg z-40 shadow-lg transform transition-transform duration-300 ${
-          sidebarOpen ? "translate-x-0" : "-translate-x-full"
-        }`}
+        className={`fixed top-0 left-0 h-full w-72 bg-[#1E2B60] text-white p-6 rounded-tr-lg rounded-br-lg z-40 shadow-lg transform transition-transform duration-300 ${sidebarOpen ? "translate-x-0" : "-translate-x-full"
+          }`}
       >
         <div className="flex items-center gap-3 mb-10 cursor-pointer">
           <img src="/pretty.jpg" className="w-10 h-10 rounded-2xl" />
@@ -117,7 +151,7 @@ export default function BookDetail() {
           <SidebarItem icon={<AiOutlineHome size={22} />} label="Dashboard" link="/user/homepagesiswa" />
           <SidebarItem icon={<FiLayers size={22} />} label="Kategori Buku" link="/user/kategori" />
           <SidebarItem icon={<MdOutlineLibraryBooks size={22} />} label="Buku Dipinjam" link="/user/peminjaman" />
-          <SidebarItem icon={<RiRefund2Line size={22} />} label="Peminjaman & Pengembalian" link="/user/pengembalian" />
+          <SidebarItem icon={<RiRefund2Line size={22} />} label="Peminjaman & Pengembalian" link="/user/riwayat" />
           <SidebarItem icon={<AiOutlineBook size={22} />} label="Profile" link="/user/profile" />
 
           <div className="border-t border-white/20 pt-5">
@@ -133,9 +167,8 @@ export default function BookDetail() {
 
       {/* MAIN CONTENT */}
       <main
-        className={`pt-24 px-8 pb-20 transition-all duration-300 ${
-          sidebarOpen ? "ml-72" : "ml-0"
-        }`}
+        className={`pt-24 px-8 pb-20 transition-all duration-300 ${sidebarOpen ? "ml-72" : "ml-0"
+          }`}
       >
         <div className="flex flex-wrap justify-center gap-16">
           {/* IMAGE */}
@@ -165,9 +198,9 @@ export default function BookDetail() {
               <div className="space-y-4 text-[#243978] font-semibold text-sm">
                 <InfoRow title="ID" content={buku.id} />
                 <InfoRow title="Kategori" content={buku.kategori} />
-                <InfoRow title="Bahasa" content="Indonesia" />
+                {/* <InfoRow title="Bahasa" content="Indonesia" /> */}
                 <InfoRow title="Sinopsis" content="Belum tersedia" />
-                <InfoRow title="Subjek" content="Belum tersedia" />
+                {/* <InfoRow title="Subjek" content="Belum tersedia" /> */}
               </div>
             </div>
 
@@ -191,65 +224,98 @@ export default function BookDetail() {
             onClick={closeModal}
           />
           <div className="fixed inset-0 flex justify-center items-center z-60 px-4">
-            <div className="bg-white w-full max-w-4xl rounded-xl p-8 shadow-lg relative">
-              <h2 className="text-center text-2xl font-bold text-[#28366E] mb-6">
-                Konfirmasi Peminjaman Buku
-              </h2>
+            <div className="bg-white w-full max-w-2xl rounded-2xl shadow-2xl relative overflow-hidden">
 
-              <div className="flex flex-col sm:flex-row gap-6">
-                <div className="flex-1 bg-blue-950 text-white rounded-lg p-6 shadow-md">
-                  <h3 className="font-bold mb-4 flex items-center gap-2 text-white">
-                    📅 Tanggal Peminjaman
-                  </h3>
+              {/* Header Modal */}
+              <div
+                className="bg-gradient-to-r from-[#28366E] to-[#1E2B60] px-8 py-6 cursor-pointer"
+                onClick={() => router.push("/admin/dashboard")}
+              >
+                <h2 className="text-center text-2xl font-bold text-white">
+                  Konfirmasi Peminjaman Buku
+                </h2>
+              </div>
 
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-semibold mb-2">
-                        Tanggal Peminjaman
-                      </label>
-                      <input
-                        type="date"
-                        value={tanggalPeminjaman}
-                        onChange={(e) =>
-                          setTanggalPeminjaman(e.target.value)
-                        }
-                        className="w-full px-4 py-2 rounded-lg bg-blue-900 text-white font-semibold"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-semibold mb-2">
-                        Tanggal Pengembalian
-                      </label>
-                      <input
-                        type="date"
-                        value={tanggalPengembalian}
-                        onChange={(e) =>
-                          setTanggalPengembalian(e.target.value)
-                        }
-                        className="w-full px-4 py-2 rounded-lg bg-blue-900 text-white font-semibold"
-                      />
+              {/* Content */}
+              <div className="p-8">
+                {/* Book Info Card */}
+                <div className="bg-gray-50 rounded-xl p-6 mb-6 border border-gray-200">
+                  <div className="flex items-start gap-4">
+                    <img
+                      src={
+                        buku.gambar.startsWith("http")
+                          ? buku.gambar
+                          : `/image/${buku.gambar}`
+                      }
+                      alt={buku.judul}
+                      className="w-20 h-28 object-cover rounded-lg shadow-md"
+                    />
+                    <div className="flex-1">
+                      <h3 className="font-bold text-[#243978] text-lg mb-1">
+                        {buku.judul}
+                      </h3>
+                      <p className="text-sm text-gray-600 mb-2">
+                        {buku.pengarang}
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs bg-[#28366E] text-white px-3 py-1 rounded-full">
+                          {buku.kategori}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </div>
+
+                {/* Date Selection */}
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-bold text-[#243978] mb-2">
+                      📅 Tanggal Peminjaman
+                    </label>
+                    <input
+                      type="date"
+                      value={tanggalPeminjaman}
+                      onChange={(e) => setTanggalPeminjaman(e.target.value)}
+                      className="w-full px-4 py-3 rounded-lg border-2 border-gray-200 text-[#243978] font-semibold focus:outline-none focus:border-[#28366E] transition"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-bold text-[#243978] mb-2">
+                      📆 Tanggal Pengembalian
+                    </label>
+                    <input
+                      type="date"
+                      value={tanggalPengembalian}
+                      onChange={(e) => setTanggalPengembalian(e.target.value)}
+                      className="w-full px-4 py-3 rounded-lg border-2 border-gray-200 text-[#243978] font-semibold focus:outline-none focus:border-[#28366E] transition"
+                    />
+                  </div>
+                </div>
+
+                {/* Info Durasi */}
+                <div className="mt-6 bg-blue-50 border-l-4 border-[#28366E] p-4 rounded">
+                  <p className="text-sm text-[#243978]">
+                    <span className="font-bold">ℹ️ Catatan:</span> Pastikan mengembalikan buku tepat waktu untuk menghindari denda keterlambatan.
+                  </p>
+                </div>
               </div>
 
-              <div className="flex justify-end gap-4 mt-6">
+              {/* Footer Buttons */}
+              <div className="bg-gray-50 px-8 py-5 flex justify-end gap-3 border-t">
                 <button
                   onClick={closeModal}
-                  className="px-6 py-2 rounded bg-gray-400 text-white font-semibold"
+                  className="px-6 py-2.5 rounded-lg bg-white border-2 border-gray-300 text-gray-700 font-semibold hover:bg-gray-50 transition"
                 >
                   Batal
                 </button>
                 <button
-                  onClick={() => {
-                    closeModal();
-                    router.push("/user/peminjaman");
-                  }}
-                  className="px-6 py-2 rounded bg-blue-950 text-white font-bold"
+                  onClick={handleConfirm}
+                  className="px-6 py-2.5 rounded-lg bg-[#28366E] text-white font-bold hover:bg-[#1f2b66] transition shadow-lg"
                 >
                   Konfirmasi Peminjaman
                 </button>
+
               </div>
             </div>
           </div>
